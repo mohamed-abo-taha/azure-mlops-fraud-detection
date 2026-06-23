@@ -113,12 +113,3 @@ az deployment group create -g fraud-mlops-rg -f infra/main.bicep \
 Or push to `main` and let the `cd` workflow build + deploy (set the
 `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` / `ACR_NAME`
 secrets for an OIDC service principal first).
-
-## What's verified here vs your step
-
-Verified locally in this repo: training and evaluation, calibration + the
-cost-based threshold, the model registry against **Azurite** (the real Azure Blob
-SDK), the FastAPI service, drift detection, the unit tests, and `bicep build` of
-the infrastructure. The one step that needs an Azure subscription — creating the
-live resources and running the container — is fully wired and documented here,
-not executed.
