@@ -1,0 +1,45 @@
+name: cd
+
+# Builds the image in Azure Container Registry and deploys the infrastructure.
+# Requires repo secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+# (a federated-credential service principal) and ACR_NAME / RESOURCE_GROUP vars.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "Dockerfile"
+      - "infra/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  RESOURCE_GROUP: fraud-mlops-rg
+  IMAGE: fraud-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push image to ACR
+        run: az acr build --registry ${{ secrets.ACR_NAME }} --image ${{ env.IMAGE }}:${{ github.sha }} .
+
+      - name: Deploy infrastructure (Bicep)
+        run: |
+          az deployment group create \
+            -g ${{ env.RESOURCE_GROUP }} \
+            -f infra/main.bicep \
+            -p containerImage=${{ secrets.ACR_NAME }}.azurecr.io/${{ env.IMAGE }}:${{ github.sha }}
